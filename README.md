@@ -32,7 +32,7 @@
 Paul adalah seorang mahasiswa semester 4 yang diterima magang di perusahaan XYZ. Pada hari pertama magang, ia diberi tugas oleh atasannya untuk membuat program manajemen file sederhana. Karena kurang terbiasa dengan bahasa C dan environment Linux, ia meminta bantuan kalian untuk mengembangkan program tersebut.
 
 ### Catatan
-Struktur folder:
+- Struktur folder:
 ```
     soal_2/
     ├── history.log
@@ -41,13 +41,14 @@ Struktur folder:
         └── backup/
 ```
 
-Beberapa variabel yang didefine:
+- Beberapa defined variable:
 ```c
 #define LINK "https://docs.google.com/uc?export=download&id=1rUIZmp10lXLtCIH3LAZJzRPeRks3Crup"
 #define FOLDER_PATH "/home/etern1ty/sisop_works/modul_2/soal_2/library"
 #define MAX_PATH_LEN 1024
 ```
 
+- Memakai fungsi rename() dan remove() dari C, bukan mv/rm menggunakan exec + fork
 ## Pengerjaan
 
 > a. Atasannya meminta agar program tersebut dapat berjalan secara daemon dan dapat mengunduh serta melakukan unzip terhadap file berikut. Atasannya juga meminta program ini dibuat tanpa menggunakan command system()
@@ -168,7 +169,6 @@ void file_operations() {
         }
     }
     closedir(dir);
-    fclose(log_file);
 }
 ```
 
@@ -187,6 +187,31 @@ Karena file-file awal (alphabetically sorted) ada angka di depannya, maka saya s
 Kemudian jika file sudah memiliki kata-kata d3Let3, m0Ve, dan r3N4mE maka akan di skip agar tidak didecrypt ulang.
 
 Penggunaan snprintf dilakukan agar tidak perlu inisialisasi variabel char[], dan bisa langsung melakukan rename dengan fungsi bawaan C.
+
+Di int main:
+
+```c
+if (WIFEXITED(status) && !WEXITSTATUS(status)) {
+    if (checker("library") == 1 && decmark == 0) {
+        pid_t opr_id = fork();
+        if (opr_id < 0) {
+            printf("Fork Failed!\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (opr_id == 0) {
+            file_operations();
+            exit(0);
+        }
+        else {
+            wait(NULL);
+            decmark = 1;
+        }
+    }
+}
+wait(&status);
+```
+
+Adanya global variable baru, decmark dengan value awal 0. Berubah menjadi 1 saat file_operations dilakukan agar tidak melakukan decrypt ulang file.
 
 > c. Setelah dekripsi selesai, akan terlihat bahwa setiap file memuat salah satu dari kode berikut: r3N4mE, d3Let3, dan m0V3. Untuk setiap file dengan nama yang memuat kode d3Let3, hapus file tersebut. Sementara itu, untuk setiap file dengan nama yang memuat kode r3N4mE, lakukan hal berikut:
 >> Jika ekstensi file adalah “.ts”, rename filenya menjadi “helper.ts”
@@ -245,6 +270,28 @@ void file_processing() {
     }
 }
 ```
+
+Di int main:
+```c
+if (WIFEXITED(status) && !WEXITSTATUS(status)) {
+    if (checker("library") == 1 && oprmark == 0) {
+        pid_t pro_id = fork();
+        if (pro_id < 0) {
+            printf("Fork Failed!\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (pro_id == 0) {
+            file_processing();
+            oprmark = 1;
+            exit(EXIT_SUCCESS);
+        }
+    }
+}
+wait(&status);
+```
+
+Variabel oprmark melakukan hal yang sama dengan decmark.
+
 Untuk delete file, saya menggunakan strstr untuk mencari substring dari decrypted_file, jika mengandung d3L3te maka bisa menggunakan fungsi remove dari C ke old_path.
 
 Untuk rename mirip, hanya saja ada penggunaan strrchr (mark lokasi extension yaitu .) dan strcmp (compare kata setelah lokasi extension).
@@ -261,6 +308,105 @@ Untuk rename mirip, hanya saja ada penggunaan strrchr (mark lokasi extension yai
 
 ### Solusi
 
+Melalui contoh penggunaan, dapat diketahui bahwa kita perlu memainkan argumen di int main.
+
+```c
+if (argc == 1) {
+    program_mode = 0;
+}
+else if (argc > 1) {
+    if (strcmp(argv[1], "-m") == 0 && argc > 2) {
+        if (strcmp(argv[2], "backup") == 0) {
+            program_mode = 1;
+        } else if (strcmp(argv[2], "restore") == 0) {
+            program_mode = 2;
+        }
+    }
+}
+```
+
+Karena mode backup dan restore hanya akan dijalankan ketika ada argumen, maka misal argc == 1 otomatis melakukan default mode. Kemudian dilakukan pengecekan argumen yang diinput jika argc > 1 terhadap argv untuk menentukan program berjalan dalam backup atau restore mode.
+
+Membuat variabel mode (global):
+
+```c
+volatile sig_atomic_t program_mode = 0;
+```
+
+Didalam while(1):
+
+```c
+switch (program_mode) {
+    case 0:
+        default_func();
+        break;
+
+    case 1:
+        backup_func();
+        break;
+
+    case 2:
+        restore_func();
+        break;
+}
+```
+
+Saya memindahkan block fungsi yang telah saya buat untuk sub-sub nomor sebelumnya ke fungsi default_func, kemudian saya membuat fungsi backup dan restore.
+
+```c
+void backup_func() {
+    DIR *dir;
+    struct dirent *ep;
+
+    char *backup_dir = "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup";
+
+    // check / create backup dir
+    dir = opendir(backup_dir);
+    if (dir == NULL) {
+        mkdir(backup_dir, 0777); // perm
+    } 
+    else closedir(dir);
+
+    dir = opendir(FOLDER_PATH);
+
+    if (dir != NULL) {
+        while ((ep = readdir(dir))) {
+            if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0) continue;
+
+            char *file_name = ep->d_name;
+            if (strstr(file_name, "m0V3") != NULL) {
+                char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
+                snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
+                snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
+                rename(old_path, new_path);
+            }
+        }
+    }
+    closedir(dir);
+}
+
+void restore_func() {
+    DIR *dir;
+    struct dirent *ep;
+    dir = opendir("/home/etern1ty/sisop_works/modul_2/soal_2/library/backup");
+
+    if (dir != NULL) {
+        while ((ep = readdir(dir))) {
+            if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0) continue;
+
+            char *file_name = ep->d_name;
+            char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
+            snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
+            snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
+            rename(old_path, new_path);
+        }
+    }
+    closedir(dir);
+}
+```
+
+Untuk backup, saya menambahkan mekanisme untuk membuat folder backup jika belum ada. Kemudian untuk memindahkan file memakai fungsi rename, sehingga mirip dengan file_operations dan file_processing. Restore hanya membalikkan old_path dan new_path.
+
 > e. Terkadang, Paul perlu mengganti mode dari program ini tanpa menghentikannya terlebih dahulu. Oleh karena itu, bantulan Paul untuk mengintegrasikan kemampuan untuk mengganti mode ini dengan mengirim sinyal ke daemon, dengan ketentuan:
 >> SIGRTMIN untuk mode default
 >
@@ -272,9 +418,47 @@ Untuk rename mirip, hanya saja ada penggunaan strrchr (mark lokasi extension yai
 
 ### Solusi
 
+Saya membuat fungsi baru untuk handling signal dan assign program_mode sesuai signal yang diterima oleh daemon.
+
+```c
+void signalin(int signum) {
+    if (signum == SIGRTMIN) program_mode = 0;
+    else if (signum == SIGUSR1) program_mode = 1;
+    else if (signum == SIGUSR2) program_mode = 2;
+}
+```
+
+Di int main:
+
+```c
+signal(SIGRTMIN, signalin);
+signal(SIGUSR1, signalin);
+signal(SIGUSR2, signalin);
+```
+
 > f. Program yang telah dibuat ini tidak mungkin akan dijalankan secara terus-menerus karena akan membebani sistem. Maka dari itu, bantulah Paul untuk membuat program ini dapat dimatikan dengan aman dan efisien
 
 ### Solusi
+
+Saya hanya perlu untuk menambahkan signal baru (SIGTERM) agar bisa melakukan kill dengan aman.
+
+```c
+void signalin(int signum) {
+    if (signum == SIGRTMIN) program_mode = 0;
+    else if (signum == SIGUSR1) program_mode = 1;
+    else if (signum == SIGUSR2) program_mode = 2;
+    else if (signum == SIGTERM) exit(EXIT_SUCCESS);
+}
+```
+
+Di int main:
+
+```c
+signal(SIGRTMIN, signalin);
+signal(SIGUSR1, signalin);
+signal(SIGUSR2, signalin);
+signal(SIGTERM, signalin);
+```
 
 > g. Terakhir, program ini harus berjalan setiap detik dan mampu mencatat setiap peristiwa yang terjadi ke dalam file .log yang bernama “history.log” dengan ketentuan:
 >> Format: [nama_user][HH:MM:SS] - <nama_file> - <action>
