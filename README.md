@@ -482,6 +482,142 @@ signal(SIGTERM, signalin);
 
 ### Solusi
 
+Pertama, saya membuat beberapa global variable untuk user dan time dan melakukan initialization di int main.
+
+```c
+char *user;
+time_t T;
+struct tm tm;
+```
+
+Di int main:
+```c
+user = (char *)malloc(10*sizeof(char));
+user = getlogin();
+T = time(NULL);
+tm = *localtime(&T);
+```
+Kemudian saya hanya perlu untuk membuat mekanisme untuk fopen ke history.log pada setiap fungsi yang melakukan rename, delete, backup, dan restore.
+
+**file_processing**
+
+```c
+void file_processing() {
+    DIR *dir;
+    struct dirent *ep;
+    dir = opendir(FOLDER_PATH);
+    FILE *log_file = fopen("/home/etern1ty/sisop_works/modul_2/soal_2/history.log", "a"); // append mode
+
+    if (dir != NULL) {
+        while ((ep = readdir(dir))) {
+            if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0) continue;
+
+            char *file_name = ep->d_name;
+            char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
+            snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
+
+            if (strstr(file_name, "d3Let3") != NULL) {
+                remove(old_path);
+                fprintf(log_file, "[%s][%02d:%02d:%02d] - %s - File successfully deleted.\n", user, tm.tm_hour, tm.tm_min, tm.tm_sec, file_name);
+                continue;
+            }
+
+            if (strstr(file_name, "r3N4mE") != NULL) {
+                char *ext = strrchr(file_name, '.');
+                if (ext != NULL) {
+                    if (strcmp(ext, ".ts") == 0) {
+                        snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/helper.ts");
+                    } 
+                    else if (strcmp(ext, ".py") == 0) {
+                        snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/calculator.py");
+                    } 
+                    else if (strcmp(ext, ".go") == 0) {
+                        snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/server.go");
+                    } 
+                    else {
+                        snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/renamed.file");
+                    }
+                } 
+                else {
+                    snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/renamed.file");
+                }
+                rename(old_path, new_path);
+
+                fprintf(log_file, "[%s][%02d:%02d:%02d] - %s - File successfully renamed.\n", user, tm.tm_hour, tm.tm_min, tm.tm_sec, file_name);
+            }
+        }
+    }
+}
+```
+
+**backup_func**
+
+```c
+void backup_func() {
+    DIR *dir;
+    struct dirent *ep;
+
+    char *backup_dir = "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup";
+
+    // check / create backup dir
+    dir = opendir(backup_dir);
+    if (dir == NULL) {
+        mkdir(backup_dir, 0777); // perm
+    } 
+    else closedir(dir);
+
+    dir = opendir(FOLDER_PATH);
+    FILE *log_file = fopen("/home/etern1ty/sisop_works/modul_2/soal_2/history.log", "a"); // append mode
+
+    if (dir != NULL) {
+        while ((ep = readdir(dir))) {
+            if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0) continue;
+
+            char *file_name = ep->d_name;
+            if (strstr(file_name, "m0V3") != NULL) {
+                char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
+                snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
+                snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
+                rename(old_path, new_path);
+
+                fprintf(log_file, "[%s][%02d:%02d:%02d] - %s - File backed up.\n", user, tm.tm_hour, tm.tm_min, tm.tm_sec, file_name);
+            }
+        }
+    }
+    fclose(log_file);
+    closedir(dir);
+}
+```
+
+**restore_func**
+
+```c
+void restore_func() {
+    DIR *dir;
+    struct dirent *ep;
+    dir = opendir("/home/etern1ty/sisop_works/modul_2/soal_2/library/backup");
+    FILE *log_file = fopen("/home/etern1ty/sisop_works/modul_2/soal_2/history.log", "a"); // append mode
+
+    if (dir != NULL) {
+        while ((ep = readdir(dir))) {
+            if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0) continue;
+
+            char *file_name = ep->d_name;
+            char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
+            snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
+            snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
+            rename(old_path, new_path);
+
+            fprintf(log_file, "[%s][%02d:%02d:%02d] - %s - File successfully restored from backup.\n", user, tm.tm_hour, tm.tm_min, tm.tm_sec, file_name);
+        }
+    }
+    fclose(log_file);
+    closedir(dir);
+}
+```
+
+**NOTE: Di kode asli, terdapat ifdef untuk mode DEBUG dan PROD. Untuk mode DEBUG, saya menggunakan mode DEBUG untuk mengecek apakah file-file yang dicek sudah dilakukan operasi yang sesuai sebelum subnomor ini. Untuk mode PROD menggunakan format yang ditentukan oleh soal.**
+
 # Soal 3
 
 ## Deskripsi Soal
