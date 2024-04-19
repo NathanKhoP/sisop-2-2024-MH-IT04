@@ -16,17 +16,18 @@
 #define FOLDER_PATH "/home/etern1ty/sisop_works/modul_2/soal_2/library"
 #define MAX_PATH_LEN 1024
 
+// Debug mode and production mode for the code, respectively
+
 // #define DEBUG
 #define PROD
 
 // Modes
-int defaultmode = 0;
-int backup = 0;
-int restore = 0;
+volatile sig_atomic_t program_mode = 0;
 
 // Marks for default mode operations
 int decmark = 0;
 int oprmark = 0;
+int mark = 0;
 
 // User and time for logging
 char *user;
@@ -34,21 +35,10 @@ time_t T;
 struct tm tm;
 
 void signalin(int signum) {
-    if (signum == SIGRTMIN) {
-        defaultmode = 1;
-        backup = 0;
-        restore = 0;
-    }
-    else if (signum == SIGUSR1) {
-        defaultmode = 0;
-        backup = 1;
-        restore = 0;
-    }
-    else if (signum == SIGUSR2) {
-        defaultmode = 0;
-        backup = 0;
-        restore = 1;
-    }
+    if (signum == SIGRTMIN) program_mode = 0;
+    else if (signum == SIGUSR1) program_mode = 1;
+    else if (signum == SIGUSR2) program_mode = 2;
+    else if (signum == SIGTERM) exit(EXIT_SUCCESS);
 }
 
 int checker(const char *fname) {
@@ -103,6 +93,7 @@ void file_operations() {
 
             char *old_name = ep->d_name;
             if (old_name[0] >= '0' && old_name[0] <= '9') continue;
+            if (strstr(old_name, "d3Let3") != NULL || strstr(old_name, "m0V3") != NULL || strstr(old_name, "r3N4mE") != NULL) continue;
 
             char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
             snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
@@ -189,6 +180,71 @@ void file_processing() {
     }
 }
 
+void default_func() {
+    int status;
+    if (checker("library.zip") == 0) {
+        pid_t download_id = fork();
+        if (download_id < 0) {
+            printf("Fork Failed!\n");
+            exit(EXIT_FAILURE);
+        }
+        else if (download_id == 0) {
+            download_file();
+        }
+    }
+    wait(&status);
+
+    if (WIFEXITED(status) && !WEXITSTATUS(status)) {
+        if (checker("library") == 0) {
+            pid_t unzip_id = fork();
+            if (unzip_id < 0) {
+                printf("Fork Failed!\n");
+                exit(EXIT_FAILURE);
+            }
+            else if (unzip_id == 0) {
+                unzip_file();
+            }
+        }
+    }
+    wait(&status);
+
+    // if (defaultmode == 1) { 
+    if (WIFEXITED(status) && !WEXITSTATUS(status)) {
+        if (checker("library") == 1 && decmark == 0 && mark == 0) {
+            pid_t opr_id = fork();
+            if (opr_id < 0) {
+                printf("Fork Failed!\n");
+                exit(EXIT_FAILURE);
+            }
+            else if (opr_id == 0) {
+                file_operations();
+                exit(0);
+            }
+            else {
+                wait(NULL); // waiting for child
+                decmark = 1; // set decmark in the parent process so that this thing doesnt repeat
+            }
+        }
+    }
+    wait(&status);
+
+    if (WIFEXITED(status) && !WEXITSTATUS(status)) {
+        if (checker("library") == 1 && oprmark == 0) {
+            pid_t pro_id = fork();
+            if (pro_id < 0) {
+                printf("Fork Failed!\n");
+                exit(EXIT_FAILURE);
+            }
+            else if (pro_id == 0) {
+                file_processing();
+                oprmark = 1;
+                exit(EXIT_SUCCESS);
+            }
+        }
+    }
+    wait(&status);
+}
+
 void backup_func() {
     DIR *dir;
     struct dirent *ep;
@@ -247,8 +303,8 @@ void restore_func() {
 
             char *file_name = ep->d_name;
             char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
-            snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/backup/%s", ep->d_name);
-            snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
+            snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
+            snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
             rename(old_path, new_path);
 
             #ifdef DEBUG
@@ -274,6 +330,7 @@ int main(int argc, char *argv[]) {
     signal(SIGRTMIN, signalin);
     signal(SIGUSR1, signalin);
     signal(SIGUSR2, signalin);
+    signal(SIGTERM, signalin);
 
     // Init data for logging 
     user = (char *)malloc(10*sizeof(char));
@@ -283,14 +340,14 @@ int main(int argc, char *argv[]) {
 
     // Handling args
     if (argc == 1) {
-        defaultmode = 1;
+        program_mode = 0;
     }
     else if (argc > 1) {
         if (strcmp(argv[1], "-m") == 0 && argc > 2) {
             if (strcmp(argv[2], "backup") == 0) {
-                backup = 1;
+                program_mode = 1;
             } else if (strcmp(argv[2], "restore") == 0) {
-                restore = 1;
+                program_mode = 2;
             }
         }
     }
@@ -317,81 +374,20 @@ int main(int argc, char *argv[]) {
     close(STDERR_FILENO);
 
     while (1) {
-        if (argc == 1) {
-            int status;
-            if (checker("library.zip") == 0) {
-                pid_t download_id = fork();
-                if (download_id < 0) {
-                    printf("Fork Failed!\n");
-                    exit(EXIT_FAILURE);
-                }
-                else if (download_id == 0) {
-                    download_file();
-                }
-            }
-            wait(&status);
+        switch (program_mode) {
+            case 0:
+                default_func();
+                break;
 
-            if (WIFEXITED(status) && !WEXITSTATUS(status)) {
-                if (checker("library") == 0) {
-                    pid_t unzip_id = fork();
-                    if (unzip_id < 0) {
-                        printf("Fork Failed!\n");
-                        exit(EXIT_FAILURE);
-                    }
-                    else if (unzip_id == 0) {
-                        unzip_file();
-                    }
-                }
-            }
-            wait(&status);
+            case 1:
+                backup_func();
+                break;
 
-            // if (defaultmode == 1) {    
-            if (WIFEXITED(status) && !WEXITSTATUS(status)) {
-                if (checker("library") == 1 && decmark == 0) {
-                    pid_t opr_id = fork();
-                    if (opr_id < 0) {
-                        printf("Fork Failed!\n");
-                        exit(EXIT_FAILURE);
-                    }
-                    else if (opr_id == 0) {
-                        file_operations();
-                        exit(0);
-                    }
-                    else {
-                        wait(NULL); // waiting for child
-                        decmark = 1; // set decmark in the parent process so that this thing doesnt repeat
-                    }
-                }
-            }
-            wait(&status);
-
-            if (WIFEXITED(status) && !WEXITSTATUS(status)) {
-                if (checker("library") == 1 && oprmark == 0) {
-                    pid_t pro_id = fork();
-                    if (pro_id < 0) {
-                        printf("Fork Failed!\n");
-                        exit(EXIT_FAILURE);
-                    }
-                    else if (pro_id == 0) {
-                        file_processing();
-                        oprmark = 1;
-                        exit(EXIT_SUCCESS);
-                    }
-                }
-            }
-            wait(&status);
-            // }
+            case 2:
+                restore_func();
+                break;
         }
 
-        if (argc > 1) {
-            if (strcmp(argv[1], "-m") == 0) {
-                if (strcmp(argv[2], "backup") == 0 && backup == 1) {
-                    backup_func();
-                } else if (strcmp(argv[2], "restore") == 0 && restore == 1) {
-                    restore_func();
-                }
-            }
-        }
         #ifdef DEBUG
         sleep(30);
         #endif
@@ -400,4 +396,5 @@ int main(int argc, char *argv[]) {
         sleep(30);
         #endif
     }
+    return 0;
 }
