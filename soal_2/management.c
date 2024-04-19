@@ -393,7 +393,7 @@ int main(int argc, char *argv[]) {
         #endif
 
         #ifdef PROD
-        sleep(30);
+        sleep(1);
         #endif
     }
     return 0;
