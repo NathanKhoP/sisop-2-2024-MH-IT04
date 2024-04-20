@@ -830,31 +830,123 @@ Pak Heze adalah seorang admin yang baik. Beliau ingin membuat sebuah program adm
 ### Catatan
 
 ```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <signal.h> 
+
+
 #define MAX_LINE_LENGTH 256
 ```
-```c
-FILE* ps_output;
-char cmd[MAX_LINE_LENGTH];
-char line[MAX_LINE_LENGTH];
-char comm[MAX_LINE_LENGTH];
-char process_name[MAX_LINE_LENGTH];
-char log_filename[MAX_LINE_LENGTH];
-FILE* log_file;
-pid_t pid, sid;
-```
-- MAX_LINE_LENGTH: Konstanta yang menyimpan nilai 256.
-- ps_output: Pointer ke objek FILE untuk menyimpan output dari proses.
-- cmd: Array karakter untuk menyimpan perintah yang akan dieksekusi.
-- line: Array karakter untuk menyimpan baris hasil pembacaan output.
-- comm: Array karakter untuk menyimpan nama perintah atau executable dari proses.
-- process_name: Array karakter untuk menyimpan nama proses.
-- log_filename: Array karakter untuk menyimpan nama file log.
-- log_file: Pointer ke objek FILE untuk menyimpan file log.
-- pid: Variabel untuk menyimpan PID (Process ID) dari proses.
-- sid: Variabel untuk menyimpan SID (Session ID) dari proses.
+
+- stdio.h: Mendukung input dan output standar.
+- stdlib.h: Berisi fungsi-fungsi dasar untuk alokasi memori, konversi tipe data, dan pengaturan - pengeluaran program.
+- string.h: Berisi fungsi-fungsi untuk memanipulasi string, seperti strcpy, strcat, dan strlen.
+- time.h: Memberikan fungsi-fungsi untuk manipulasi dan format waktu.
+- unistd.h: Berisi deklarasi konstanta dan fungsi-fungsi untuk berinteraksi dengan sistem operasi, - seperti fork, exec, dan sleep.
+- sys/types.h: Mendefinisikan tipe data yang digunakan dalam sistem operasi.
+- sys/wait.h: Berisi fungsi untuk menunggu status dari proses anak.
+- sys/stat.h: Berisi deklarasi struktur dan fungsi untuk mengakses atribut file.
+- signal.h: Mendukung penanganan sinyal dalam program, seperti SIGINT dan SIGTERM.
+- #define MAX_LINE_LENGTH 256: sebuah konstanta yang mendefinisikan panjang maksimum dari sebuah baris teks dalam program. Dalam kasus ini, nilainya adalah 256 karakter.
 
 ## Pengerjaan
 
+```c
+void monitorProcess(int monitorMode, const char* user) {
+  char cmd[MAX_LINE_LENGTH];
+  FILE* ps_output;
+  char line[MAX_LINE_LENGTH];
+  char comm[MAX_LINE_LENGTH];
+  char log_filename[MAX_LINE_LENGTH];
+  FILE* log_file;
+  int pid_process;
+  ....
+```
+- cmd: Array karakter untuk menyimpan perintah yang akan dieksekusi.
+- ps_output: Pointer ke objek FILE untuk menyimpan output dari proses.
+- MAX_LINE_LENGTH: Konstanta yang menyimpan nilai 256.
+- line: Array karakter untuk menyimpan baris hasil pembacaan output.
+- comm: Array karakter untuk menyimpan nama perintah atau executable dari proses.
+- log_filename: Array karakter untuk menyimpan nama file log.
+- log_file: Pointer ke objek FILE untuk menyimpan file log.
+- pid_process: Variabel untuk menyimpan PID (Process ID) dari proses yang sedang diproses oleh program.
+Disini saya punya fungsi yang menerima argumen `monitorMode` dan `user` serta mendefinisikan beberapa variabel yang nanti akan dipakai
+
+---
+```c
+      // Mengambil pid dan nama proses
+      snprintf(cmd, sizeof(cmd), "ps -u %s -o pid,comm | awk 'NR>1 {print $1, $2}'", user);
+      ps_output = popen(cmd, "r");
+      if (ps_output == NULL) {
+        perror("Failed to open pipe");
+        exit(EXIT_FAILURE);
+      }
+```        
+Disini kita mengambil pid dan nama proses dari user dengan mengexecute command `ps -u <user> -o pid,comm | awk 'NR>1 {print $1, $2}'` yang intinya dia akan menampilkan pid dan nama proses dari user. Lalu command tersebut akan kita pipe menggunakan `popen()` dan kita masukkan outputnya ke `ps_output` lalu ada implementasi error handling biasa
+
+---
+
+```c
+// Buka log file
+      snprintf(log_filename, sizeof(log_filename), "%s.log", user);
+      log_file = fopen(log_filename, "a");
+      if (log_file == NULL) {
+        perror("Failed to open log file");
+        exit(EXIT_FAILURE);
+        }
+```
+Selanjutnya kita akan buka log file dan memberinya nama sesuai user menggunakan `snprintf` dan error handling biasa
+
+---
+```c
+  // Baca output dari ps per baris
+      while (fgets(line, sizeof(line), ps_output) != NULL) {
+        // Parsing baris untuk mendapatkan PID dan nama proses
+        if (sscanf(line, "%d %s", &pid_process, comm) != 2) {
+          fprintf(stderr, "Failed to parse line: %s", line);
+          continue;
+          }
+           // Mendapatkan waktu saat ini
+        time_t now;
+        struct tm* local_time;
+        char timestamp[30];
+        time(&now);
+        local_time = localtime(&now);
+        strftime(timestamp, sizeof(timestamp), "[%d:%m:%Y]-[%H:%M:%S]", local_time);
+        // Format data dan simpan ke log file
+        if (monitorMode == 1) {
+          fprintf(log_file, "%s-%d-%s_JALAN\n", timestamp, pid_process, comm);
+          }
+        else if (monitorMode == 2) {
+          fprintf(log_file, "%s-%d-%s_GAGAL\n", timestamp, pid_process, comm);
+          }
+        }
+        // Tutup pipe dan log file
+      pclose(ps_output);
+      fclose(log_file);
+}
+```
+Disini kita baca output dari `ps_output` tadi baris perbaris dan mendapatkan waktu serta melakukan format timestamp, disini saya memiliki sebuah if else statement yang akan melakukan format dengan berbeda, jika `monitorMode == 1` (ketika ./admin -m <user>) akan melakukan log dengan format xxx_JALAN dan ketika `monitorMode == 2` (ketika ./admin -c <user>) akan melakukan log dengan format xxx_GAGAL, lalu kita akan print ke `log_file`, setelah selesai kita akan menutup pipe dan log
+
+---
+```c
+int main(int argc, char* argv[]) {
+  char process_name[MAX_LINE_LENGTH];
+  pid_t pid, sid;
+```
+
+Disini adalah fungsi utama dan dia menerima 2 argumen yaitu: argc adalah jumlah argumen baris perintah yang diberikan saat menjalankan program, dan argv adalah array yang berisi argumen-argumen tersebut. argc setidaknya akan bernilai 1, yang menunjukkan nama program itu sendiri. Sedangkan argv[0] berisi string yang merupakan nama program.
+- process_name: Array karakter untuk menyimpan nama proses.
+- pid: Variabel untuk menyimpan PID (Process ID) dari proses.
+- sid: Variabel untuk menyimpan SID (Session ID) dari proses.
+
+---
 ```c
 if (argc < 2) {
     fprintf(stderr, "Usage: %s <username> | -m <username> | -s <username>\n", argv[0]);
@@ -867,13 +959,12 @@ Disini kita memeriksa jumlah argumen yang diberikan saat menjalankan program. `a
 ```c
 int monitorMode = 0;
 char* user = argv[1];
-int pid_process;
 ```
 Jika jumlah argumen kurang dari 2 maka akan `stderr` dan memberi info Usage
 Disini kita menginisiasi beberapa variabel
 - monitorMode: Variabel untuk menentukan mode operasi program. Nilai 0 menunjukkan mode standar.
 - user: Variabel untuk menyimpan nama pengguna yang diberikan sebagai argumen pertama saat menjalankan program.
-- pid_process: Variabel untuk menyimpan PID (Process ID) dari proses yang sedang diproses oleh program.
+
 
 ---
 ```c
@@ -969,81 +1060,21 @@ Ini untuk mematikan proses sebelumnya `./admin -c <user>` yaitu dengan menggunak
 
 ---
 ```c
-while (1) {
 
-    if (monitorMode == 1) {
-      // Mengambil pid dan nama proses
-      snprintf(cmd, sizeof(cmd), "ps -u %s -o pid,comm | awk 'NR>1 {print $1, $2}'", user);
-      ps_output = popen(cmd, "r");
-      if (ps_output == NULL) {
-        perror("Failed to open pipe");
-        exit(EXIT_FAILURE);
-        }
-        ...}
-    ...
+  while (1) {
+    if (monitorMode == 1 || monitorMode == 2) {
+      monitorProcess(monitorMode, user);
+      }
 
-    sleep(1); // Loop setiap 1 detik
+    sleep(1);
     }
-```        
-Sekarang kita masuk ke loop, disini langsung ngecek misalkan `monitorMode` sama dengan 1 yaitu ketika kita `./admin -m <user>` akan mengexecute command `ps -u <user> -o pid,comm | awk 'NR>1 {print $1, $2}'` yang intinya dia akan menampilkan pid dan nama proses dari user.
-Lalu command tersebut akan kita pipe menggunakan `popen()` dan kita masukkan outpunya ke `ps_output` lalu ada implementasi error handling biasa
-
----
-
-```c
-// Buka log file
-      snprintf(log_filename, sizeof(log_filename), "%s.log", user);
-      log_file = fopen(log_filename, "a");
-      if (log_file == NULL) {
-        perror("Failed to open log file");
-        exit(EXIT_FAILURE);
-        }
-```
-Selanjutnya kita akan buka log file dan memberinya nama sesuai user menggunakan `snprintf` dan error handling biasa
-
----
-```c
-  // Baca output dari ps per baris
-      while (fgets(line, sizeof(line), ps_output) != NULL) {
-        // Parsing baris untuk mendapatkan PID dan nama proses
-        if (sscanf(line, "%d %s", &pid_process, comm) != 2) {
-          fprintf(stderr, "Failed to parse line: %s", line);
-          continue;
-          }
-           // Mendapatkan waktu saat ini
-        time_t now;
-        struct tm* local_time;
-        char timestamp[30];
-        time(&now);
-        local_time = localtime(&now);
-        strftime(timestamp, sizeof(timestamp), "[%d:%m:%Y]-[%H:%M:%S]", local_time);
-        // Format data dan simpan ke log file
-        fprintf(log_file, "%s-%d-%s_JALAN\n", timestamp, pid_process, comm);
-        }
-        // Tutup pipe dan log file
-      pclose(ps_output);
-      fclose(log_file);
-```
-Disini kita baca output dari `ps_output` tadi baris perbaris dan mendapatkan waktu serta melakukan format timestamp, lalu kita akan print ke `log_file`, setelah selesai kita akan menutup pipe dan log
-
----
-```c
-   if (monitorMode == 2) {
-    ...
-    fprintf(log_file, "%s-%d-%s_GAGAL\n", timestamp, pid_process, comm);
-    ...
-   }
-```
-Untuk kode saat `monitorMode == 2` tidak berbeda dengan `monitorMode == 1`, yang beda cuman saat log nya yaitu awalnya `xxxx_JALAN` sekarang kita gagalkan jadi `xxx_GAGAL` untuk logicnya sama seperti sebelumnya
-
----
-```c
 
   exit(EXIT_SUCCESS);
   return 0;
   }
 ```
-Setelah selesai kita akan exit
+Disini terdapat sebuah loop `while` yang berjalan secara tak terbatas (selama kondisinya adalah benar). Di dalam loop tersebut, dilakukan pengecekan apakah `monitorMode` memiliki nilai 1 atau 2. Jika iya, maka fungsi `monitorProcess` dipanggil dengan parameter `monitorMode` dan `user`. Setelah itu, program akan beristirahat selama 1 detik menggunakan fungsi `sleep(1)`. Seluruh proses ini terus berlangsung hingga program keluar dengan status keluaran yang berhasil (`EXIT_SUCCESS`).
+
 
 ---
 ## Errors
