@@ -34,6 +34,7 @@ int main(int argc, char* argv[]) {
     char* args[] = { "ps", "-u", user, NULL };
     execvp(args[0], args);
     perror("execvp failed");
+
     return 1;
     }
 
@@ -179,7 +180,6 @@ int main(int argc, char* argv[]) {
       fclose(log_file);
 
       }
-
 
     sleep(1);
     }
