@@ -13,7 +13,7 @@
 #define TMP_FILE "/Users/macbook/Kuliah/Sistem Operasi/modul-sisop-2/soal_1/replace.tmp"
 #define LOG_FILE "/Users/macbook/Kuliah/Sistem Operasi/modul-sisop-2/soal_1/virus.log"
 
-void replaceAll(char* str, const char* oldWord, const char* newWord) {
+void replace_string(char* str, const char* oldWord, const char* newWord) {
   char* pos, temp[BUFFER_SIZE];
   int index = 0;
   int owlen;
@@ -110,9 +110,9 @@ int main(int argc, char* argv[]) {
       }
 
     while ((fgets(buffer, BUFFER_SIZE, fPtr)) != NULL) {
-      replaceAll(buffer, "m4LwAr3", "[MALWARE]");
-      replaceAll(buffer, "5pYw4R3", "[SPYWARE]");
-      replaceAll(buffer, "R4nS0mWaR3", "[RANSOMWARE]");
+      replace_string(buffer, "m4LwAr3", "[MALWARE]");
+      replace_string(buffer, "5pYw4R3", "[SPYWARE]");
+      replace_string(buffer, "R4nS0mWaR3", "[RANSOMWARE]");
       fputs(buffer, fTemp);
       }
 

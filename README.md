@@ -206,6 +206,28 @@ Kemudian, file utama dihapus dan file sementara direname menjadi file utama meng
 Setelah keluar dari loop, file log ditutup, dan program keluar dengan status keluaran yang sukses.
 
 ---
+## Errors
+Error timestamp
+![error timestamp](soal_1/errors/image.png) 
+---
+Success format time
+![Success format time](soal_1/errors/image-1.png) 
+---
+Berhasil membuat program untuk mereplace string: 
+![Berhasil membuat program untuk mereplace string:](soal_1/errors/image-2.png)     
+```c
+char text[] = "Ini adalah contoh teks dengan m4LwAr3, 5pYw4R3, dan R4nS0mWaR3 di dalamnya.";
+```
+---
+lupa dimatiin sampe 5000an line
+![lupa dimatiin sampe 5000an line](soal_1/errors/image-3.png) 
+--- 
+gagal log
+![gagal log](soal_1/errors/image-5.png) 
+---
+ gagal read (solusi hapus chdir(/))
+![gagal read](soal_1/errors/image-6.png)
+---
 
 # Soal 2
 
