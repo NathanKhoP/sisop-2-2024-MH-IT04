@@ -37,12 +37,12 @@ void log_message(const char* file_name) {
   time_t rawtime;
   struct tm* timeinfo;
   char buffer[80];
-  char log_message[128]; // Buffer tambahan untuk menyimpan pesan log lengkap
+  char log_message[128];
 
   time(&rawtime);
   timeinfo = localtime(&rawtime);
 
-  strftime(buffer, sizeof(buffer), "[%d-%m-%Y][%H:%M:%S] ", timeinfo); // Tambahkan spasi di akhir format waktu
+  strftime(buffer, sizeof(buffer), "[%d-%m-%Y][%H:%M:%S] ", timeinfo);
   printf("%s", buffer);
 
   snprintf(log_message, sizeof(log_message), "Suspicious string at %s successfully replaced!\n", file_name);
@@ -75,10 +75,6 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
     }
 
-  if ((chdir("/")) < 0) {
-    exit(EXIT_FAILURE);
-    }
-
   close(STDIN_FILENO);
   close(STDOUT_FILENO);
   close(STDERR_FILENO);
@@ -100,7 +96,7 @@ int main(int argc, char* argv[]) {
       return 1;
       }
 
-    char* path = argv[1]; // Menggunakan argumen pertama sebagai path file
+    char* path = argv[1];
     FILE* fPtr, * fTemp;
     char buffer[BUFFER_SIZE];
 
@@ -120,7 +116,7 @@ int main(int argc, char* argv[]) {
       fputs(buffer, fTemp);
       }
 
-    log_message(path); // Mencetak pesan log dengan format yang diminta
+    log_message(path);
 
     fclose(fPtr);
     fclose(fTemp);
