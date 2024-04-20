@@ -1045,7 +1045,29 @@ Untuk kode saat `monitorMode == 2` tidak berbeda dengan `monitorMode == 1`, yang
 ```
 Setelah selesai kita akan exit
 
-
+---
+## Errors
+error fitur gagalkan kegiatan user
+![alt text](soal_3/errors/image.png) 
+---
+pid masih salah tapi timestamp udh bener
+![alt text](soal_3/errors/image-1.png) 
+---
+berhasil membuat fitur menampilkan proses user (file ngops.c belum saya 
+ubah namanya)
+![alt text](soal_3/errors/image-2.png)
+---
+salah log, udah bisa log tapi belum di format
+![alt text](soal_3/errors/image-3.png) 
+---
+log udah lumayan bener
+![alt text](soal_3/errors/image-4.png) 
+---
+log hampir infinite loop (lupa taro sleep())
+![alt text](soal_3/errors/image-5.png) 
+---
+error tidak bisa open log file (solusinya hapus chdir(/))
+![alt text](soal_3/errors/image-6.png) 
 
 
 
