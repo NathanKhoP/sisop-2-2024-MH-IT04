@@ -788,11 +788,237 @@ void restore_func() {
 
 # Soal 3
 
+**Dikerjakan oleh Athalla Barka Fadhil (5027231018)**
+
 ## Deskripsi Soal
+
+Pak Heze adalah seorang admin yang baik. Beliau ingin membuat sebuah program admin yang dapat memantau para pengguna sistemnya. Bantulah Pak Heze untuk membuat program  tersebut!
 
 ### Catatan
 
+```c
+#define MAX_LINE_LENGTH 256
+```
+```c
+FILE* ps_output;
+char cmd[MAX_LINE_LENGTH];
+char line[MAX_LINE_LENGTH];
+char comm[MAX_LINE_LENGTH];
+char process_name[MAX_LINE_LENGTH];
+char log_filename[MAX_LINE_LENGTH];
+FILE* log_file;
+pid_t pid, sid;
+```
+- MAX_LINE_LENGTH: Konstanta yang menyimpan nilai 256.
+- ps_output: Pointer ke objek FILE untuk menyimpan output dari proses.
+- cmd: Array karakter untuk menyimpan perintah yang akan dieksekusi.
+- line: Array karakter untuk menyimpan baris hasil pembacaan output.
+- comm: Array karakter untuk menyimpan nama perintah atau executable dari proses.
+- process_name: Array karakter untuk menyimpan nama proses.
+- log_filename: Array karakter untuk menyimpan nama file log.
+- log_file: Pointer ke objek FILE untuk menyimpan file log.
+- pid: Variabel untuk menyimpan PID (Process ID) dari proses.
+- sid: Variabel untuk menyimpan SID (Session ID) dari proses.
+
 ## Pengerjaan
+
+```c
+if (argc < 2) {
+    fprintf(stderr, "Usage: %s <username> | -m <username> | -s <username>\n", argv[0]);
+    exit(EXIT_FAILURE);
+    }
+```
+Disini kita memeriksa jumlah argumen yang diberikan saat menjalankan program. `argc` adalah jumlah argumen yang disediakan dalam pemanggilan program dari command line, sedangkan `argv` adalah array yang berisi argumen-argumen tersebut.
+
+---
+```c
+int monitorMode = 0;
+char* user = argv[1];
+int pid_process;
+```
+Jika jumlah argumen kurang dari 2 maka akan `stderr` dan memberi info Usage
+Disini kita menginisiasi beberapa variabel
+- monitorMode: Variabel untuk menentukan mode operasi program. Nilai 0 menunjukkan mode standar.
+- user: Variabel untuk menyimpan nama pengguna yang diberikan sebagai argumen pertama saat menjalankan program.
+- pid_process: Variabel untuk menyimpan PID (Process ID) dari proses yang sedang diproses oleh program.
+
+---
+```c
+if (argc == 2) {
+    char* args[] = { "ps", "-u", user, NULL };
+    execvp(args[0], args);
+    perror("execvp failed");
+    return 1;
+    }
+```
+Mengecek apakah argumen command line adalah 2 (`argc == 2`) jika iya, maka akan membuat array `args` yang berisikan command yang akan diexecute `ps -u <user>` lalu akan dieksekusi menggunakan `execvp()`, jika ada error akan mengoutput error `execvp failed` dan `return 1`. Command ini `ps -u <user>` yang akan digunakan untuk menampilkan proses user 
+
+
+```c
+ if (argc == 2 && strcmp(argv[1], "-m") == 0) {
+    fprintf(stderr, "Usage: %s -m <username>\n", argv[0]);
+    exit(EXIT_FAILURE);
+    }
+```
+Misalkan `argc` jumlahnya 2 (e.g ./admin -m) dan `argv[1]` sama dengan `-m` maka program akan exit dan memberikan output error Usage
+
+---
+```c
+pid = fork(); // Menyimpan PID dari Child Process
+
+  /* Keluar saat fork gagal
+  * (nilai variabel pid < 0) */
+  if (pid < 0) {
+    fprintf(stderr, "gagal membuat fork");
+    exit(EXIT_FAILURE);
+    }
+
+  /* Keluar saat fork berhasil
+  * (nilai variabel pid adalah PID dari child process) */
+  if (pid > 0) {
+    exit(EXIT_SUCCESS);
+    }
+
+  umask(0);
+
+  sid = setsid();
+  if (sid < 0) {
+    exit(EXIT_FAILURE);
+    }
+```
+Fungsi diatas sama seperti dimodul, yaitu untuk mengimplementasi daemon, tapi disini tidak saya lakukan `chdir()` seperti dimodul
+
+---
+
+```c
+if (argc == 3 && strcmp(argv[1], "-m") == 0) {
+    fprintf(stderr, "Memulai proses monitoring user %s", argv[2]);
+    monitorMode = 1;
+    user = argv[2];
+    }
+```
+Diatas itu simpel aja, yaitu mengecek jika argumen kedua adalah `"-m"` maka akan mengubah variabel `monitorMode = 1` dan `user = argv[2]` ini akan berfungsi nanti di fungsi `main`
+
+---
+
+```c
+ if (argc == 3 && strcmp(argv[1], "-s") == 0) {
+    snprintf(process_name, sizeof(process_name), "%s -m %s", argv[0], argv[2]);
+    char* args[] = { "pkill", "-f", process_name, NULL };
+    execvp(args[0], args);
+    perror("execvp failed");
+    return 1;
+    }
+```
+Kalo ini mirip kyk sebelumnya, dia akan ngecek argumen kedua, setelah itu akan mengeksekusi command yang ada di `args[]` menggunakan `execvp`. Ini yang bertanggung jawab untuk mematikan proses `./admin -m <user>`
+
+---
+```c
+ if (argc == 3 && strcmp(argv[1], "-c") == 0) {
+    fprintf(stderr, "Memulai proses gagalkan monitoring user %s", argv[2]);
+    monitorMode = 2;
+    user = argv[2];
+    }
+```
+Modifikasi dikit dari sebelumnya, ini yang akan bertanggung jawab untuk mengagalkan proses monitoring user, cukup perhatikan bahwa disini `monitorMode` diassign value `2`
+
+---
+```c
+  if (argc == 3 && strcmp(argv[1], "-a") == 0) {
+    snprintf(process_name, sizeof(process_name), "%s -c %s", argv[0], argv[2]);
+    char* args[] = { "pkill", "-f", process_name, NULL };
+    execvp(args[0], args);
+    perror("execvp failed");
+    return 1;
+    }
+```
+Ini untuk mematikan proses sebelumnya `./admin -c <user>` yaitu dengan menggunakan `pkill -f <process_name>` tidak beda jauh dari fungsi yang `-s`.
+
+---
+```c
+while (1) {
+
+    if (monitorMode == 1) {
+      // Mengambil pid dan nama proses
+      snprintf(cmd, sizeof(cmd), "ps -u %s -o pid,comm | awk 'NR>1 {print $1, $2}'", user);
+      ps_output = popen(cmd, "r");
+      if (ps_output == NULL) {
+        perror("Failed to open pipe");
+        exit(EXIT_FAILURE);
+        }
+        ...}
+    ...
+
+    sleep(1); // Loop setiap 1 detik
+    }
+```        
+Sekarang kita masuk ke loop, disini langsung ngecek misalkan `monitorMode` sama dengan 1 yaitu ketika kita `./admin -m <user>` akan mengexecute command `ps -u <user> -o pid,comm | awk 'NR>1 {print $1, $2}'` yang intinya dia akan menampilkan pid dan nama proses dari user.
+Lalu command tersebut akan kita pipe menggunakan `popen()` dan kita masukkan outpunya ke `ps_output` lalu ada implementasi error handling biasa
+
+---
+
+```c
+// Buka log file
+      snprintf(log_filename, sizeof(log_filename), "%s.log", user);
+      log_file = fopen(log_filename, "a");
+      if (log_file == NULL) {
+        perror("Failed to open log file");
+        exit(EXIT_FAILURE);
+        }
+```
+Selanjutnya kita akan buka log file dan memberinya nama sesuai user menggunakan `snprintf` dan error handling biasa
+
+---
+```c
+  // Baca output dari ps per baris
+      while (fgets(line, sizeof(line), ps_output) != NULL) {
+        // Parsing baris untuk mendapatkan PID dan nama proses
+        if (sscanf(line, "%d %s", &pid_process, comm) != 2) {
+          fprintf(stderr, "Failed to parse line: %s", line);
+          continue;
+          }
+           // Mendapatkan waktu saat ini
+        time_t now;
+        struct tm* local_time;
+        char timestamp[30];
+        time(&now);
+        local_time = localtime(&now);
+        strftime(timestamp, sizeof(timestamp), "[%d:%m:%Y]-[%H:%M:%S]", local_time);
+        // Format data dan simpan ke log file
+        fprintf(log_file, "%s-%d-%s_JALAN\n", timestamp, pid_process, comm);
+        }
+        // Tutup pipe dan log file
+      pclose(ps_output);
+      fclose(log_file);
+```
+Disini kita baca output dari `ps_output` tadi baris perbaris dan mendapatkan waktu serta melakukan format timestamp, lalu kita akan print ke `log_file`, setelah selesai kita akan menutup pipe dan log
+
+---
+```c
+   if (monitorMode == 2) {
+    ...
+    fprintf(log_file, "%s-%d-%s_GAGAL\n", timestamp, pid_process, comm);
+    ...
+   }
+```
+Untuk kode saat `monitorMode == 2` tidak berbeda dengan `monitorMode == 1`, yang beda cuman saat log nya yaitu awalnya `xxxx_JALAN` sekarang kita gagalkan jadi `xxx_GAGAL` untuk logicnya sama seperti sebelumnya
+
+---
+```c
+
+  exit(EXIT_SUCCESS);
+  return 0;
+  }
+```
+Setelah selesai kita akan exit
+
+
+
+
+
+
+
+
 
 # Soal 4
 

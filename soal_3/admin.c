@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     return 1;
     }
 
-  if (argc == 2 && strcmp(user, "-m") == 0) {
+  if (argc == 2 && strcmp(argv[1], "-m") == 0) {
     fprintf(stderr, "Usage: %s -m <username>\n", argv[0]);
     exit(EXIT_FAILURE);
     }
@@ -112,7 +112,6 @@ int main(int argc, char* argv[]) {
       log_file = fopen(log_filename, "a");
       if (log_file == NULL) {
         perror("Failed to open log file");
-        fprintf(stdout, "tes debug5");
         exit(EXIT_FAILURE);
         }
 
