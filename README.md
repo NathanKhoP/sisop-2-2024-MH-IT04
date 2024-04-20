@@ -39,7 +39,6 @@ Gavriel adalah seorang cyber security enthusiast. Suatu hari, ia dikontrak oleh 
 ```
 ## Pengerjaan
 
-Fungsi `replace_string` digunakan untuk mereplace string, menerima argumen `str` untuk buffer dan sesuai namanya `oldWord` dan `newWord`
 ```c
 void replace_string(char* str, const char* oldWord, const char* newWord) {
   char* pos, temp[BUFFER_SIZE];
@@ -61,8 +60,10 @@ void replace_string(char* str, const char* oldWord, const char* newWord) {
     }
   }
 ```
+Fungsi `replace_string` digunakan untuk mereplace string, menerima argumen `str` untuk buffer dan sesuai namanya `oldWord` dan `newWord`
+
 ---
-Fungsi `log_message` digunakan untuk mengformat timestamp dan format message log dan menerima argumen `file_name` yang nantinya akan diisi dengan nama file lognya
+
 ```c
 void log_message(const char* file_name) {
   time_t rawtime;
@@ -80,10 +81,10 @@ void log_message(const char* file_name) {
   printf("%s", log_message);
   }
 ```
----
-Untuk detailnya sebenernya simpel saja, menggunakan `strftime` untuk melakukan format timestampnya lalu `snprintf` untuk mengformat log messagenya
+Fungsi `log_message` digunakan untuk mengformat timestamp dan format message log dan menerima argumen `file_name` yang nantinya akan diisi dengan nama file lognya
 
-Implementasi Daemon, disini saya ambil dari modul
+---
+
 ```c
 int main(int argc, char* argv[]) {
   pid_t pid, sid;        // Variabel untuk menyimpan PID
@@ -121,8 +122,12 @@ int main(int argc, char* argv[]) {
   ....
 }
 ```
+Untuk detailnya sebenernya simpel saja, menggunakan `strftime` untuk melakukan format timestampnya lalu `snprintf` untuk mengformat log messagenya
+
+Implementasi Daemon, disini saya ambil dari modul
+
 ---
-Sekarang kita masuk ke program intinya, block `while(1){...}` disini agar program berjalan terus menerus lalu untuk isinya kita mengassign `log_fd` dengan  `open()` yang digunakan untuk membuka log filenya, dan memberi akses untuk crete, write, dan append dengan mode 0640 lalu kita arahkan output`stdout` dan `stderr` ke file log, kita juga ada pengecekan argumen command linenya, kalo ga menspecify filenya yaitu `argv[1]` atau `argc < 2` maka kita `return 1`
+
 ```c
 .... 
 // didalam int main()
@@ -144,8 +149,10 @@ while (1) {
       ....
 }
 ```
+Sekarang kita masuk ke program intinya, block `while(1){...}` disini agar program berjalan terus menerus lalu untuk isinya kita mengassign `log_fd` dengan  `open()` yang digunakan untuk membuka log filenya, dan memberi akses untuk crete, write, dan append dengan mode 0640 lalu kita arahkan output`stdout` dan `stderr` ke file log, kita juga ada pengecekan argumen command linenya, kalo ga menspecify filenya yaitu `argv[1]` atau `argc < 2` maka kita `return 1`
+
 ---
-Disini kita buat argumen pertama dari cmd kita pake sebagai path file. Fungsi `fopen()` digunakan untuk membuka file dengan mode "r" untuk file utama dan "w" untuk file sementara. Misal salah satu dari kedua file tersebut gagal dibuka, program akan mencetak pesan kesalahan dan exit dengan  `return 1`.
+
 ```c
 ....
 char* path = argv[1]; // Menggunakan argumen pertama sebagai path file
@@ -161,16 +168,11 @@ char* path = argv[1]; // Menggunakan argumen pertama sebagai path file
       return 1;
       }
 ```
+Disini kita buat argumen pertama dari cmd kita pake sebagai path file. Fungsi `fopen()` digunakan untuk membuka file dengan mode "r" untuk file utama dan "w" untuk file sementara. Misal salah satu dari kedua file tersebut gagal dibuka, program akan mencetak pesan kesalahan dan exit dengan  `return 1`.
+
 ---
-Dalam bagian ini, program membaca file baris per baris dengan menggunakan `fgets()` dan menyimpannya di dalam buffer. Setiap baris kemudian diubah dengan menggunakan fungsi `replace_string()` untuk mengganti string tertentu dengan string pengganti yang sesuai. Hasilnya ditulis ke dalam file sementara.
 
-Setelah selesai membaca dan mengubah semua baris, pesan log dicetak dengan memanggil fungsi `log_message()` dengan format yang diminta. File utama dan file sementara ditutup dengan `fclose()`.
-
-Kemudian, file utama dihapus dan file sementara direname menjadi file utama menggunakan fungsi `remove()` dan `rename()`. Program kemudian tidur selama 15 detik sebelum mengulang prosesnya.
-
-Setelah keluar dari loop, file log ditutup, dan program keluar dengan status keluaran yang sukses.
 ```c
-
 {
 ....
     while ((fgets(buffer, BUFFER_SIZE, fPtr)) != NULL) {
@@ -195,6 +197,15 @@ close(log_fd);
 exit(EXIT_SUCCESS);
 
 ```
+Dalam bagian ini, program membaca file baris per baris dengan menggunakan `fgets()` dan menyimpannya di dalam buffer. Setiap baris kemudian diubah dengan menggunakan fungsi `replace_string()` untuk mengganti string tertentu dengan string pengganti yang sesuai. Hasilnya ditulis ke dalam file sementara.
+
+Setelah selesai membaca dan mengubah semua baris, pesan log dicetak dengan memanggil fungsi `log_message()` dengan format yang diminta. File utama dan file sementara ditutup dengan `fclose()`.
+
+Kemudian, file utama dihapus dan file sementara direname menjadi file utama menggunakan fungsi `remove()` dan `rename()`. Program kemudian tidur selama 15 detik sebelum mengulang prosesnya.
+
+Setelah keluar dari loop, file log ditutup, dan program keluar dengan status keluaran yang sukses.
+
+---
 
 # Soal 2
 
