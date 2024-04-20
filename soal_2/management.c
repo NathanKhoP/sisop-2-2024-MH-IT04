@@ -14,7 +14,7 @@
 
 #define LINK "https://docs.google.com/uc?export=download&id=1rUIZmp10lXLtCIH3LAZJzRPeRks3Crup" // library.zip fixed link
 #define FOLDER_PATH "/home/etern1ty/sisop_works/modul_2/soal_2/library"
-#define MAX_PATH_LEN 1024
+#define MAX_LEN 1024
 
 // Debug mode and production mode for the code, respectively
 
@@ -37,7 +37,7 @@ void signalin(int signum) {
 }
 
 int checker(const char *fname) {
-    char name[MAX_PATH_LEN] = "/home/etern1ty/sisop_works/modul_2/soal_2/";
+    char name[MAX_LEN] = "/home/etern1ty/sisop_works/modul_2/soal_2/";
     strcat(name, fname);
     if (access(name, F_OK) == 0) {
         return 1;
@@ -91,15 +91,15 @@ void file_operations() {
             if (strstr(old_name, "d3Let3") != NULL || strstr(old_name, "m0V3") != NULL || strstr(old_name, "r3N4mE") != NULL) continue;
             if (strstr(old_name, "backup") != NULL || strstr(old_name, "helper") != NULL || strstr(old_name, "calculator") != NULL || strstr(old_name, "server") != NULL || strstr(old_name, "renamed") != NULL) continue;
 
-            char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
-            snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
+            char old_path[MAX_LEN], new_path[MAX_LEN];
+            snprintf(old_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
 
-            char decrypted_name[MAX_PATH_LEN];
-            strncpy(decrypted_name, ep->d_name, MAX_PATH_LEN - 1);
-            decrypted_name[MAX_PATH_LEN - 1] = '\0';
+            char decrypted_name[MAX_LEN];
+            strncpy(decrypted_name, ep->d_name, MAX_LEN - 1);
+            decrypted_name[MAX_LEN - 1] = '\0';
             decrypt_file(decrypted_name);
 
-            snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", decrypted_name);
+            snprintf(new_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", decrypted_name);
             rename(old_path, new_path);
             
             #ifdef DEBUG
@@ -127,8 +127,8 @@ void file_processing() {
             if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0) continue;
 
             char *file_name = ep->d_name;
-            char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
-            snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
+            char old_path[MAX_LEN], new_path[MAX_LEN];
+            snprintf(old_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
 
             if (strstr(file_name, "d3Let3") != NULL) {
                 remove(old_path);
@@ -147,20 +147,20 @@ void file_processing() {
                 char *ext = strrchr(file_name, '.');
                 if (ext != NULL) {
                     if (strcmp(ext, ".ts") == 0) {
-                        snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/helper.ts");
+                        snprintf(new_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/helper.ts");
                     } 
                     else if (strcmp(ext, ".py") == 0) {
-                        snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/calculator.py");
+                        snprintf(new_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/calculator.py");
                     } 
                     else if (strcmp(ext, ".go") == 0) {
-                        snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/server.go");
+                        snprintf(new_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/server.go");
                     } 
                     else {
-                        snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/renamed.file");
+                        snprintf(new_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/renamed.file");
                     }
                 } 
                 else {
-                    snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/renamed.file");
+                    snprintf(new_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/renamed.file");
                 }
                 rename(old_path, new_path);
 
@@ -258,9 +258,9 @@ void backup_func() {
 
             char *file_name = ep->d_name;
             if (strstr(file_name, "m0V3") != NULL) {
-                char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
-                snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
-                snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
+                char old_path[MAX_LEN], new_path[MAX_LEN];
+                snprintf(old_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
+                snprintf(new_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
                 rename(old_path, new_path);
 
                 #ifdef DEBUG
@@ -293,9 +293,9 @@ void restore_func() {
             if (strcmp(ep->d_name, ".") == 0 || strcmp(ep->d_name, "..") == 0) continue;
 
             char *file_name = ep->d_name;
-            char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
-            snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
-            snprintf(new_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
+            char old_path[MAX_LEN], new_path[MAX_LEN];
+            snprintf(old_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/backup/%s", ep->d_name);
+            snprintf(new_path, MAX_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
             rename(old_path, new_path);
 
             #ifdef DEBUG
