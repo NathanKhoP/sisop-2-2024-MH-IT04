@@ -24,11 +24,6 @@
 // Modes
 volatile sig_atomic_t program_mode = 0;
 
-// Marks for default mode operations
-int decmark = 0;
-int oprmark = 0;
-int mark = 0;
-
 // User and time for logging
 char *user;
 time_t T;
@@ -94,6 +89,7 @@ void file_operations() {
             char *old_name = ep->d_name;
             if (old_name[0] >= '0' && old_name[0] <= '9') continue;
             if (strstr(old_name, "d3Let3") != NULL || strstr(old_name, "m0V3") != NULL || strstr(old_name, "r3N4mE") != NULL) continue;
+            if (strstr(old_name, "backup") != NULL || strstr(old_name, "helper") != NULL || strstr(old_name, "calculator") != NULL || strstr(old_name, "server") != NULL || strstr(old_name, "renamed") != NULL) continue;
 
             char old_path[MAX_PATH_LEN], new_path[MAX_PATH_LEN];
             snprintf(old_path, MAX_PATH_LEN, "/home/etern1ty/sisop_works/modul_2/soal_2/library/%s", ep->d_name);
@@ -210,7 +206,7 @@ void default_func() {
 
     // if (defaultmode == 1) { 
     if (WIFEXITED(status) && !WEXITSTATUS(status)) {
-        if (checker("library") == 1 && decmark == 0 && mark == 0) {
+        if (checker("library") == 1) {
             pid_t opr_id = fork();
             if (opr_id < 0) {
                 printf("Fork Failed!\n");
@@ -218,18 +214,14 @@ void default_func() {
             }
             else if (opr_id == 0) {
                 file_operations();
-                exit(0);
-            }
-            else {
-                wait(NULL); // waiting for child
-                decmark = 1; // set decmark in the parent process so that this thing doesnt repeat
+                exit(EXIT_SUCCESS);
             }
         }
     }
     wait(&status);
 
     if (WIFEXITED(status) && !WEXITSTATUS(status)) {
-        if (checker("library") == 1 && oprmark == 0) {
+        if (checker("library") == 1) {
             pid_t pro_id = fork();
             if (pro_id < 0) {
                 printf("Fork Failed!\n");
@@ -237,7 +229,6 @@ void default_func() {
             }
             else if (pro_id == 0) {
                 file_processing();
-                oprmark = 1;
                 exit(EXIT_SUCCESS);
             }
         }
