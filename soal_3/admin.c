@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
   pid_t pid, sid;
 
   if (argc < 2) {
-    fprintf(stderr, "Usage: %s <username> | -m <username> | -s <username>\n", argv[0]);
+    fprintf(stderr, "Usage: %s <username> | -m <username> | -s <username> | -c <username> | -a <username>\n", argv[0]);
     exit(EXIT_FAILURE);
     }
 
