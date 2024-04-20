@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
   char line[MAX_LINE_LENGTH];
   char comm[MAX_LINE_LENGTH];
   char process_name[MAX_LINE_LENGTH];
-  char log_filename[MAX_LINE_LENGTH]; // Mengubah menjadi array untuk mengakomodasi nama file yang lebih panjang
+  char log_filename[MAX_LINE_LENGTH];
   FILE* log_file;
   pid_t pid, sid;
 
@@ -28,13 +28,13 @@ int main(int argc, char* argv[]) {
 
   int monitorMode = 0;
   char* user = argv[1];
-  int pid_process; // pid proses ada disini
+  int pid_process;
 
   if (argc == 2) {
     char* args[] = { "ps", "-u", user, NULL };
-    // args = {"ps", "-u", user, "-o", "comm", NULL};
     execvp(args[0], args);
-    perror("execvp failed"); // Jika execvp gagal, program akan mencapai baris ini
+    perror("execvp failed");
+
     return 1;
     }
 
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     snprintf(process_name, sizeof(process_name), "%s -m %s", argv[0], argv[2]);
     char* args[] = { "pkill", "-f", process_name, NULL };
     execvp(args[0], args);
-    perror("execvp failed"); // Jika execvp gagal, program akan mencapai baris ini
+    perror("execvp failed");
     return 1;
     }
 
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     snprintf(process_name, sizeof(process_name), "%s -c %s", argv[0], argv[2]);
     char* args[] = { "pkill", "-f", process_name, NULL };
     execvp(args[0], args);
-    perror("execvp failed"); // Jika execvp gagal, program akan mencapai baris ini
+    perror("execvp failed");
     return 1;
     }
 
@@ -182,8 +182,7 @@ int main(int argc, char* argv[]) {
 
       }
 
-
-    sleep(3);
+    sleep(1);
     }
 
   exit(EXIT_SUCCESS);

@@ -1,5 +1,4 @@
 # Repository Praktikum Sistem Operasi Modul 2 - IT04
-
 ## Anggota
 
 | Nama                      | NRP        |
@@ -7,6 +6,7 @@
 |Nathan Kho Pancras         | 5027231002 |
 |Athalla Barka Fadhil       | 5027231018 |
 |Muhammad Ida Bagus Rafi H  | 5027221059 |
+
 
 ## Daftar Isi
 
@@ -17,11 +17,184 @@
 
 # Soal 1
 
+**Dikerjakan oleh Athalla Barka Fadhil (5027231018)**
+
 ## Deskripsi Soal
 
-### Catatan
+Gavriel adalah seorang cyber security enthusiast. Suatu hari, ia dikontrak oleh sebuah perusahaan ternama untuk membuat sebuah program yang cukup rumit dengan bayaran jutaan rupiah. Karena tergoda dengan nominal bayaran tersebut, Gavriel langsung menerima tawaran tersebut. Setelah mencoba membuat dan mengembangkan program tersebut selama seminggu, laptop yang digunakan Gavriel mengalami overheat dan mati total sehingga harus dilarikan ke tukang servis terdekat. Karena keterbatasan waktu dalam pembuatan program dan tidak ingin mengecewakan perusahaan, Gavriel meminta bantuan kalian untuk membuat program tersebut
 
+### Catatan
+- Struktur Folder:
+```
+    soal_1
+    └── virus.c
+```
+
+
+- Beberapa defined variable:
+```c
+#define BUFFER_SIZE 1000
+#define TMP_FILE "/Users/macbook/Kuliah/Sistem Operasi/modul-sisop-2/soal_1/replace.tmp"
+#define LOG_FILE "/Users/macbook/Kuliah/Sistem Operasi/modul-sisop-2/soal_1/virus.log"
+```
 ## Pengerjaan
+
+Fungsi `replace_string` digunakan untuk mereplace string, menerima argumen `str` untuk buffer dan sesuai namanya `oldWord` dan `newWord`
+```c
+void replace_string(char* str, const char* oldWord, const char* newWord) {
+  char* pos, temp[BUFFER_SIZE];
+  int index = 0;
+  int owlen;
+
+  owlen = strlen(oldWord);
+
+  if (!strcmp(oldWord, newWord)) {
+    return;
+    }
+
+  while ((pos = strstr(str, oldWord)) != NULL) {
+    strcpy(temp, str);
+    index = pos - str;
+    str[index] = '\0';
+    strcat(str, newWord);
+    strcat(str, temp + index + owlen);
+    }
+  }
+```
+---
+Fungsi `log_message` digunakan untuk mengformat timestamp dan format message log dan menerima argumen `file_name` yang nantinya akan diisi dengan nama file lognya
+```c
+void log_message(const char* file_name) {
+  time_t rawtime;
+  struct tm* timeinfo;
+  char buffer[80];
+  char log_message[128];
+
+  time(&rawtime);
+  timeinfo = localtime(&rawtime);
+
+  strftime(buffer, sizeof(buffer), "[%d-%m-%Y][%H:%M:%S] ", timeinfo);
+  printf("%s", buffer);
+
+  snprintf(log_message, sizeof(log_message), "Suspicious string at %s successfully replaced!\n", file_name);
+  printf("%s", log_message);
+  }
+```
+---
+Untuk detailnya sebenernya simpel saja, menggunakan `strftime` untuk melakukan format timestampnya lalu `snprintf` untuk mengformat log messagenya
+
+Implementasi Daemon, disini saya ambil dari modul
+```c
+int main(int argc, char* argv[]) {
+  pid_t pid, sid;        // Variabel untuk menyimpan PID
+
+  pid = fork();     // Menyimpan PID dari Child Process
+  int log_fd;
+
+  /* Keluar saat fork gagal
+  * (nilai variabel pid < 0) */
+  if (pid < 0) {
+    exit(EXIT_FAILURE);
+    }
+
+  /* Keluar saat fork berhasil
+  * (nilai variabel pid adalah PID dari child process) */
+  if (pid > 0) {
+    exit(EXIT_SUCCESS);
+    }
+
+  umask(0);
+
+  sid = setsid();
+  if (sid < 0) {
+    exit(EXIT_FAILURE);
+    }
+
+  if ((chdir("/")) < 0) {
+    exit(EXIT_FAILURE);
+    }
+
+  close(STDIN_FILENO);
+  close(STDOUT_FILENO);
+  close(STDERR_FILENO);
+
+  ....
+}
+```
+---
+Sekarang kita masuk ke program intinya, block `while(1){...}` disini agar program berjalan terus menerus lalu untuk isinya kita mengassign `log_fd` dengan  `open()` yang digunakan untuk membuka log filenya, dan memberi akses untuk crete, write, dan append dengan mode 0640 lalu kita arahkan output`stdout` dan `stderr` ke file log, kita juga ada pengecekan argumen command linenya, kalo ga menspecify filenya yaitu `argv[1]` atau `argc < 2` maka kita `return 1`
+```c
+.... 
+// didalam int main()
+while (1) {
+
+    log_fd = open(LOG_FILE, O_CREAT | O_WRONLY | O_APPEND, 0640);
+    if (log_fd < 0) {
+      exit(EXIT_FAILURE);
+      }
+
+    // Mengarahkan stdout dan stderr ke file log
+    dup2(log_fd, STDOUT_FILENO);
+    dup2(log_fd, STDERR_FILENO);
+
+    // Cek argumen command line
+    if (argc < 2) {
+      return 1;
+      }
+      ....
+}
+```
+---
+Disini kita buat argumen pertama dari cmd kita pake sebagai path file. Fungsi `fopen()` digunakan untuk membuka file dengan mode "r" untuk file utama dan "w" untuk file sementara. Misal salah satu dari kedua file tersebut gagal dibuka, program akan mencetak pesan kesalahan dan exit dengan  `return 1`.
+```c
+....
+char* path = argv[1]; // Menggunakan argumen pertama sebagai path file
+    FILE* fPtr, * fTemp;
+    char buffer[BUFFER_SIZE];
+
+    fPtr = fopen(path, "r");
+    fTemp = fopen(TMP_FILE, "w");
+
+    if (fPtr == NULL || fTemp == NULL) {
+      printf("\nUnable to open file.\n");
+      printf("Please check whether file exists and you have read/write privilege.\n");
+      return 1;
+      }
+```
+---
+Dalam bagian ini, program membaca file baris per baris dengan menggunakan `fgets()` dan menyimpannya di dalam buffer. Setiap baris kemudian diubah dengan menggunakan fungsi `replace_string()` untuk mengganti string tertentu dengan string pengganti yang sesuai. Hasilnya ditulis ke dalam file sementara.
+
+Setelah selesai membaca dan mengubah semua baris, pesan log dicetak dengan memanggil fungsi `log_message()` dengan format yang diminta. File utama dan file sementara ditutup dengan `fclose()`.
+
+Kemudian, file utama dihapus dan file sementara direname menjadi file utama menggunakan fungsi `remove()` dan `rename()`. Program kemudian tidur selama 15 detik sebelum mengulang prosesnya.
+
+Setelah keluar dari loop, file log ditutup, dan program keluar dengan status keluaran yang sukses.
+```c
+
+{
+....
+    while ((fgets(buffer, BUFFER_SIZE, fPtr)) != NULL) {
+      replace_string(buffer, "m4LwAr3", "[MALWARE]");
+      replace_string(buffer, "5pYw4R3", "[SPYWARE]");
+      replace_string(buffer, "R4nS0mWaR3", "[RANSOMWARE]");
+      fputs(buffer, fTemp);
+    }
+
+    log_message(path); // Mencetak pesan log dengan format yang diminta
+
+    fclose(fPtr);
+    fclose(fTemp);
+
+    remove(path);
+    rename("/Users/macbook/Kuliah/Sistem Operasi/modul-sisop-2/soal_1/replace.tmp", path);
+
+    sleep(15);
+    }
+
+close(log_fd);
+exit(EXIT_SUCCESS);
+
+```
 
 # Soal 2
 
