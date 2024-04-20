@@ -840,18 +840,6 @@ Pak Heze adalah seorang admin yang baik. Beliau ingin membuat sebuah program adm
 #include <sys/stat.h>
 #include <signal.h> 
 
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <signal.h> 
-
-
 #define MAX_LINE_LENGTH 256
 ```
 
@@ -878,31 +866,8 @@ void monitorProcess(int monitorMode, const char* user) {
   FILE* log_file;
   int pid_process;
   ....
-
-- stdio.h: Mendukung input dan output standar.
-- stdlib.h: Berisi fungsi-fungsi dasar untuk alokasi memori, konversi tipe data, dan pengaturan - pengeluaran program.
-- string.h: Berisi fungsi-fungsi untuk memanipulasi string, seperti strcpy, strcat, dan strlen.
-- time.h: Memberikan fungsi-fungsi untuk manipulasi dan format waktu.
-- unistd.h: Berisi deklarasi konstanta dan fungsi-fungsi untuk berinteraksi dengan sistem operasi, - seperti fork, exec, dan sleep.
-- sys/types.h: Mendefinisikan tipe data yang digunakan dalam sistem operasi.
-- sys/wait.h: Berisi fungsi untuk menunggu status dari proses anak.
-- sys/stat.h: Berisi deklarasi struktur dan fungsi untuk mengakses atribut file.
-- signal.h: Mendukung penanganan sinyal dalam program, seperti SIGINT dan SIGTERM.
-- #define MAX_LINE_LENGTH 256: sebuah konstanta yang mendefinisikan panjang maksimum dari sebuah baris teks dalam program. Dalam kasus ini, nilainya adalah 256 karakter.
-
-## Pengerjaan
-
-```c
-void monitorProcess(int monitorMode, const char* user) {
-  char cmd[MAX_LINE_LENGTH];
-  FILE* ps_output;
-  char line[MAX_LINE_LENGTH];
-  char comm[MAX_LINE_LENGTH];
-  char log_filename[MAX_LINE_LENGTH];
-  FILE* log_file;
-  int pid_process;
-  ....
 ```
+Disini saya punya fungsi yang menerima argumen `monitorMode` dan `user` serta mendefinisikan beberapa variabel yang nanti akan dipakai
 - cmd: Array karakter untuk menyimpan perintah yang akan dieksekusi.
 - ps_output: Pointer ke objek FILE untuk menyimpan output dari proses.
 - MAX_LINE_LENGTH: Konstanta yang menyimpan nilai 256.
@@ -913,7 +878,7 @@ void monitorProcess(int monitorMode, const char* user) {
 - log_filename: Array karakter untuk menyimpan nama file log.
 - log_file: Pointer ke objek FILE untuk menyimpan file log.
 - pid_process: Variabel untuk menyimpan PID (Process ID) dari proses yang sedang diproses oleh program.
-Disini saya punya fungsi yang menerima argumen `monitorMode` dan `user` serta mendefinisikan beberapa variabel yang nanti akan dipakai
+
 
 ---
 ```c
@@ -978,7 +943,7 @@ int main(int argc, char* argv[]) {
   pid_t pid, sid;
 ```
 
-Disini adalah fungsi utama dan dia menerima 2 argumen yaitu: argc adalah jumlah argumen baris perintah yang diberikan saat menjalankan program, dan argv adalah array yang berisi argumen-argumen tersebut. argc setidaknya akan bernilai 1, yang menunjukkan nama program itu sendiri. Sedangkan argv[0] berisi string yang merupakan nama program.
+Disini adalah fungsi utama dan dia menerima 2 argumen yaitu: `argc` adalah jumlah argumen baris perintah yang diberikan saat menjalankan program, dan `argv` adalah array yang berisi argumen-argumen tersebut. `argc` setidaknya akan bernilai 1, yang menunjukkan nama program itu sendiri. Sedangkan `argv[0]` berisi string yang merupakan nama program.
 - process_name: Array karakter untuk menyimpan nama proses.
 - pid: Variabel untuk menyimpan PID (Process ID) dari proses.
 - sid: Variabel untuk menyimpan SID (Session ID) dari proses.
