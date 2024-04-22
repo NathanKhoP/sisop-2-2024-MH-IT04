@@ -926,15 +926,25 @@ Selanjutnya kita akan buka log file dan memberinya nama sesuai user menggunakan 
           fprintf(log_file, "%s-%d-%s_JALAN\n", timestamp, pid_process, comm);
           }
         else if (monitorMode == 2) {
-          fprintf(log_file, "%s-%d-%s_GAGAL\n", timestamp, pid_process, comm);
-          }
+            // Pastikan untuk gunakan user root untuk menjalankan program `su root`
+            int result = kill(pid_process, SIGTERM);
+            if (result == 0) {
+              fprintf(log_file, "%s-%d-%s_GAGAL\n", timestamp, pid_process, comm);
+              }
+            else {
+              perror("kill");
+              fprintf(log_file, "GAGAL DI KILL%d-%s_\n", pid_process, comm);
+              exit(EXIT_FAILURE);
+              }
+            }fprintf(log_file, "%s-%d-%s_GAGAL\n", timestamp, pid_process, comm);
+                
         }
         // Tutup pipe dan log file
       pclose(ps_output);
       fclose(log_file);
 }
 ```
-Disini kita baca output dari `ps_output` tadi baris perbaris dan mendapatkan waktu serta melakukan format timestamp, disini saya memiliki sebuah if else statement yang akan melakukan format dengan berbeda, jika `monitorMode == 1` (ketika `./admin -m <user>`) akan melakukan log dengan format xxx_JALAN dan ketika `monitorMode == 2` (ketika `./admin -c <user>`) akan melakukan log dengan format xxx_GAGAL, lalu kita akan print ke `log_file`, setelah selesai kita akan menutup pipe dan log
+Disini kita baca output dari `ps_output` tadi baris perbaris dan mendapatkan waktu serta melakukan format timestamp, disini saya memiliki sebuah if else statement yang akan melakukan format dengan berbeda, jika `monitorMode == 1` (ketika `./admin -m <user>`) akan melakukan log dengan format xxx_JALAN dan ketika `monitorMode == 2` (ketika `./admin -c <user>`) akan mengagalkan proses yang dilakukan user dan melakukan log dengan format xxx_GAGAL. Perlu diperhatikan bahwa fungsi `kill()` harus dijalankan pada user root, lalu kita akan print ke `log_file`, setelah selesai kita akan menutup pipe dan log
 
 ---
 ```c

@@ -57,7 +57,16 @@ void monitorProcess(int monitorMode, const char* user) {
       fprintf(log_file, "%s-%d-%s_JALAN\n", timestamp, pid_process, comm);
       }
     else if (monitorMode == 2) {
-      fprintf(log_file, "%s-%d-%s_GAGAL\n", timestamp, pid_process, comm);
+      // Pastikan untuk gunakan user root untuk menjalankan program `su root`
+      int result = kill(pid_process, SIGTERM);
+      if (result == 0) {
+        fprintf(log_file, "%s-%d-%s_GAGAL\n", timestamp, pid_process, comm);
+        }
+      else {
+        perror("kill");
+        fprintf(log_file, "GAGAL DI KILL%d-%s_\n", pid_process, comm);
+        exit(EXIT_FAILURE);
+        }
       }
     }
 
@@ -141,6 +150,9 @@ int main(int argc, char* argv[]) {
     return 1;
     }
 
+  close(STDIN_FILENO);
+  close(STDOUT_FILENO);
+  close(STDERR_FILENO);
 
   while (1) {
     if (monitorMode == 1 || monitorMode == 2) {
