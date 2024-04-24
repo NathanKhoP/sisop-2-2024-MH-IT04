@@ -819,6 +819,30 @@ void restore_func() {
 
 **NOTE: Di kode asli, terdapat ifdef untuk mode DEBUG dan PROD. Untuk mode DEBUG, saya menggunakan mode DEBUG untuk mengecek apakah file-file yang dicek sudah dilakukan operasi yang sesuai sebelum subnomor ini. Untuk mode PROD menggunakan format yang ditentukan oleh soal.**
 
+## Output
+
+**Default Mode**
+![default](assets/soal_2_out_01.png) 
+
+**Backup Mode - Args**
+![backup](assets/soal_2_out_02.png) 
+
+**Restore Mode - Args**
+![restore](assets/soal_2_out_03.png) 
+
+**Backup Mode - Signal**
+![backupsignal](assets/soal_2_out_05.png) 
+
+**Restore Mode - Signal**
+![restoresignal](assets/soal_2_out_06.png) 
+
+**Default Mode - Signal** (Does Nothing)
+![sigrtmin](assets/soal_2_out_07.png) 
+
+**EXIT_SUCCESS with SIGTERM**
+![sigterm](assets/soal_2_out_08.png) 
+
+
 # Soal 3
 
 **Dikerjakan oleh Athalla Barka Fadhil (5027231018)**
