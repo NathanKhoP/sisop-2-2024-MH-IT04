@@ -1144,8 +1144,137 @@ error tidak bisa open log file (solusinya hapus chdir(/))
 
 # Soal 4
 
+**Dikerjakan oleh Muhammad Ida Bagus Rafi Habibie (5027221059)**
+
 ## Deskripsi Soal
 
+Salomo memiliki passion yang sangat dalam di bidang sistem operasi. Saat ini, dia ingin mengotomasi kegiatan-kegiatan yang ia lakukan agar dapat bekerja secara efisien.
 ### Catatan
 
-## Pengerjaan
+### Langkah Awal
+
+- Pertama kita membuat file konfigurasi yang nanti akan menjadi shortcut kode untuk menjalankan program
+untuk nama sendirinya bebas,misalnya contoh nama filenya file.conf dan untuk isi filenya disesuaikan untuk berapa jumlah aplikasi
+yang ingin dibuka misal
+```
+firefox 2
+chrome 3
+```
+
+- Kedua,setelah membuat konfigurasi filenya,selanjutnya membuat program nomer 4,untuk struktur folder sebagai berikut:
+```
+    soal_4
+    └── setup.c
+```
+
+
+### Pengerjaan
+
+- untuk kode di dalam setup.c sendiri sebagai berikut
+```
+void open_apps(char *apps[], int num_apps) {
+    pid_t pid;
+
+    for (int i = 0; i < num_apps; i++) {
+        pid = fork();
+
+        if (pid < 0) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        } else if (pid == 0) {
+            execlp(apps[i], apps[i], NULL);
+            perror("execlp");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    for (int i = 0; i < num_apps; i++) {
+        wait(NULL);
+    }
+}
+```
+kode diatas merupakan kode yang berfungsi untuk membuka aplikasi dengan apps sebagai nama aplikasinya dan jumlah yang ingin dibuka dari aplikasinya
+
+-selanjutnya untuk fungsi kode ke 2 adalah fungsi untuk menutup aplikasi
+```
+void close_apps(char *apps[], int num_apps) {
+    for (int i = 0; i < num_apps; i++) {
+        pid_t pid = fork();
+
+        if (pid < 0) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        } else if (pid == 0) {
+            execlp("pkill", "pkill", "-f", apps[i], NULL);
+            perror("execlp");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    for (int i = 0; i < num_apps; i++) {
+        wait(NULL);
+    }
+}
+```
+kode di atas merupakan kode yang berfungsi untuk menjalankan perintah menutup aplikasi yang dimana kode ini akan menutup semua aplikasi yang kita buka
+
+-yang ketiga adalah fungsi utama kode nya
+```
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s [-o <app1> <num1> <app2> <num2> ... <appN> <numN>] [-f file.conf] [-k]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(argv[1], "-o") == 0 && argc > 3 && (argc - 2) % 2 == 0) {
+        int num_apps = (argc - 2) / 2;
+        char *apps[MAX_APPS];
+        int app_index = 0;
+
+        for (int i = 2; i < argc; i += 2) {
+            char *app_name = argv[i];
+            int num_windows = atoi(argv[i + 1]);
+
+            for (int j = 0; j < num_windows; j++) {
+                apps[app_index++] = app_name;
+            }
+        }
+
+        open_apps(apps, app_index);
+    } else if (strcmp(argv[1], "-f") == 0 && argc == 3) {
+        FILE *file = fopen(argv[2], "r");
+
+        if (file == NULL) {
+            perror("fopen");
+            exit(EXIT_FAILURE);
+        }
+
+        char app[MAX_APP_NAME];
+        int num_windows;
+
+        while (fscanf(file, "%s %d", app, &num_windows) == 2) {
+            char *apps[MAX_APPS];
+
+            for (int i = 0; i < num_windows; i++) {
+                apps[i] = strdup(app);
+            }
+
+            open_apps(apps, num_windows);
+        }
+
+        fclose(file);
+    } else if (strcmp(argv[1], "-k") == 0 && (argc == 2 || (argc == 3 && strcmp(argv[2], "-f") == 0))) {
+        char *apps[] = {"firefox", "chrome"};
+        close_apps(apps, sizeof(apps) / sizeof(apps[0]));
+    } else {
+        printf("Invalid arguments\n");
+        printf("Usage: %s [-o <app1> <num1> <app2> <num2> ... <appN> <numN>] [-f file.conf] [-k]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    return 0;
+}
+```
+kode di atas merupakan fungsi utamanya yang dimana disini berisikan perintak untuk menjalankan fumgsi membuka aplikasi dan menutup aplikasi seperti
+perintah ketika menggunakan/menjalankan file.konf yang berisikan firefox 2 dan chrome 3 maka akan terbuka sesuai permintaan konfigurasi file,lalu
+juga ada perintah yang akan menjalankan fungsi menutup aplikasi yaitu ./setup -k.
