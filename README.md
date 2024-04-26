@@ -1286,5 +1286,5 @@ membuka apk
 
 menutup apk
 
-![menutup aplikasi](assets/soal_4_gambar1.png)
+![menutup aplikasi](assets/soal_4_gambar2.png)
 
