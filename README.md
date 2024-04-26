@@ -1278,3 +1278,13 @@ int main(int argc, char *argv[]) {
 kode di atas merupakan fungsi utamanya yang dimana disini berisikan perintak untuk menjalankan fumgsi membuka aplikasi dan menutup aplikasi seperti
 perintah ketika menggunakan/menjalankan file.konf yang berisikan firefox 2 dan chrome 3 maka akan terbuka sesuai permintaan konfigurasi file,lalu
 juga ada perintah yang akan menjalankan fungsi menutup aplikasi yaitu ./setup -k.
+
+### Gambar
+membuka apk
+
+![membuka aplikasi](assets/soal_4_gambar1.png)
+
+menutup apk
+
+![menutup aplikasi](assets/soal_4_gambar1.png)
+
