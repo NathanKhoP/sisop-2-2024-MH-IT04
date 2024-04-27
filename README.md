@@ -1170,119 +1170,145 @@ chrome 3
 
 ### Pengerjaan
 
-- untuk kode di dalam setup.c sendiri sebagai berikut
+- untuk kode di dalam setup.c sendiri sebagai berikut,
+  pertama adalah fungsi untuk menjalankan perintah membuka aplikasi
 ```
-void open_apps(char *apps[], int num_apps) {
-    pid_t pid;
+void open_apps(int argc, char *argv[]) {
+    for (int i = 2; i < argc; i += 2) {
+        char *app_name = argv[i];
+        int num_instances = atoi(argv[i + 1]);
+        for (int j = 0; j < num_instances; j++) {
+            pid_t pid = fork();
+            if (pid < 0) {
+                printf("Error: Fork failed\n");
+                exit(1);
+            }
+            if (pid == 0) {
+                execlp(app_name, app_name, NULL);
+                perror("Error");
+                exit(1);
+            } else {
+                add_global(pid);
+            }
+        }
+    }
+}
 
-    for (int i = 0; i < num_apps; i++) {
-        pid = fork();
+```
+kode diatas merupakan kode yang berfungsi untuk menjalankan perintah membuka aplikasinmelalui perintah "-o apps numm" dengan apps sebagai nama aplikasinya dan jumlah yang ingin dibuka dari aplikasinya
 
-        if (pid < 0) {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        } else if (pid == 0) {
-            execlp(apps[i], apps[i], NULL);
-            perror("execlp");
-            exit(EXIT_FAILURE);
+-selanjutnya untuk fungsi kode ke 2 adalah fungsi untuk membuka aplikasi melalui konfigurasi file yang telah disiapkan sebelumnya
+```
+void open_apps_from_file(char *filename) {
+    FILE *input_file = fopen(filename, "r");
+    if (input_file == NULL) {
+        printf("Error: Failed to open file\n");
+        return;
+    }
+
+    char app[MAX_APP_NAME];
+    int num;
+    while (fscanf(input_file, "%s %d", app, &num) == 2) {
+        for (int i = 0; i < num; i++) {
+            pid_t pid = fork();
+            if (pid < 0) {
+                printf("Error: Fork failed\n");
+                exit(1);
+            }
+            if (pid == 0) {
+                execlp(app, app, NULL);
+                perror("Error");
+                exit(1);
+            } else {
+                add_global(pid);
+            }
         }
     }
 
-    for (int i = 0; i < num_apps; i++) {
-        wait(NULL);
-    }
+    fclose(input_file);
 }
 ```
-kode diatas merupakan kode yang berfungsi untuk membuka aplikasi dengan apps sebagai nama aplikasinya dan jumlah yang ingin dibuka dari aplikasinya
+kode di atas merupakan kode yang berfungsi untuk menjalankan perintah yang ada di file konfigurasi yang sudah disiapkan sebelumnya,yaitu membuka aplikasi yang dimana akan membuka 2 tab firefox dan 3 chrome sesuai isi dari file
 
--selanjutnya untuk fungsi kode ke 2 adalah fungsi untuk menutup aplikasi
+-yang ketiga adalah fungsi untuk menjalankan perintah mematikkan aplikasi
 ```
-void close_apps(char *apps[], int num_apps) {
-    for (int i = 0; i < num_apps; i++) {
-        pid_t pid = fork();
+void kill_temp() {
+    for (int i = 0; i < pidcount; i++) {
+        if (kill(running[i], SIGTERM) == -1) {
+            perror("Error");
+        }
+    }
+}
 
-        if (pid < 0) {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        } else if (pid == 0) {
-            execlp("pkill", "pkill", "-f", apps[i], NULL);
-            perror("execlp");
-            exit(EXIT_FAILURE);
+void kill_from_file(char *filename) {
+    FILE *input_file = fopen(filename, "r");
+    if (input_file == NULL) {
+        printf("Error: Failed to open file\n");
+        return;
+    }
+
+    char app[MAX_APP_NAME];
+    int num;
+    while (fscanf(input_file, "%s %d", app, &num) == 2) {
+        for (int i = 0; i < num; i++) {
+            pid_t pid = fork();
+            if (pid < 0) {
+                printf("Error: Fork failed\n");
+                exit(1);
+            }
+            if (pid == 0) {
+                execlp("pkill", "pkill", app, NULL);
+                perror("Error");
+                exit(1);
+            }
         }
     }
 
-    for (int i = 0; i < num_apps; i++) {
-        wait(NULL);
-    }
+    fclose(input_file);
 }
-```
-kode di atas merupakan kode yang berfungsi untuk menjalankan perintah menutup aplikasi yang dimana kode ini akan menutup semua aplikasi yang kita buka
 
--yang ketiga adalah fungsi utama kode nya
+```
+kode di atas merupakan kode yang akan menjalankan perintah untuk memetikkan aplikasi yang telah dibuka dengan menggunakan perintah -k untuk mematikan semua aplikasi yang berjalan lalu,juga untuk mematikan aplikasi sesuai konfigurasi file dengan perintah -k file.conf
+
+-selanjutnya,untuk fungsi utama kodenya
 ```
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: %s [-o <app1> <num1> <app2> <num2> ... <appN> <numN>] [-f file.conf] [-k]\n", argv[0]);
-        exit(EXIT_FAILURE);
+        printf("Usage: %s [-o <app1> <num1> <app2> <num2> ...] [-f file.conf] [-k] [-k file.conf]\n", argv[0]);
+        exit(1);
     }
 
-    if (strcmp(argv[1], "-o") == 0 && argc > 3 && (argc - 2) % 2 == 0) {
-        int num_apps = (argc - 2) / 2;
-        char *apps[MAX_APPS];
-        int app_index = 0;
-
-        for (int i = 2; i < argc; i += 2) {
-            char *app_name = argv[i];
-            int num_windows = atoi(argv[i + 1]);
-
-            for (int j = 0; j < num_windows; j++) {
-                apps[app_index++] = app_name;
-            }
-        }
-
-        open_apps(apps, app_index);
+    if (strcmp(argv[1], "-o") == 0 && argc > 2) {
+        open_apps(argc, argv);
+        write_temp();
     } else if (strcmp(argv[1], "-f") == 0 && argc == 3) {
-        FILE *file = fopen(argv[2], "r");
-
-        if (file == NULL) {
-            perror("fopen");
-            exit(EXIT_FAILURE);
+        open_apps_from_file(argv[2]);
+        write_temp();
+    } else if (strcmp(argv[1], "-k") == 0) {
+        if (argc == 2) {
+            kill_temp();
+        } else if (argc == 3) {
+            kill_from_file(argv[2]);
+        } else {
+            printf("Invalid arguments\n");
+            printf("Usage: %s [-o <app1> <num1> <app2> <num2> ...] [-f file.conf] [-k] [-k file.conf]\n", argv[0]);
+            exit(1);
         }
-
-        char app[MAX_APP_NAME];
-        int num_windows;
-
-        while (fscanf(file, "%s %d", app, &num_windows) == 2) {
-            char *apps[MAX_APPS];
-
-            for (int i = 0; i < num_windows; i++) {
-                apps[i] = strdup(app);
-            }
-
-            open_apps(apps, num_windows);
-        }
-
-        fclose(file);
-    } else if (strcmp(argv[1], "-k") == 0 && (argc == 2 || (argc == 3 && strcmp(argv[2], "-f") == 0))) {
-        char *apps[] = {"firefox", "chrome"};
-        close_apps(apps, sizeof(apps) / sizeof(apps[0]));
     } else {
         printf("Invalid arguments\n");
-        printf("Usage: %s [-o <app1> <num1> <app2> <num2> ... <appN> <numN>] [-f file.conf] [-k]\n", argv[0]);
-        exit(EXIT_FAILURE);
+        printf("Usage: %s [-o <app1> <num1> <app2> <num2> ...] [-f file.conf] [-k] [-k file.conf]\n", argv[0]);
+        exit(1);
     }
 
     return 0;
 }
 ```
-kode di atas merupakan fungsi utamanya yang dimana disini berisikan perintak untuk menjalankan fumgsi membuka aplikasi dan menutup aplikasi seperti
-perintah ketika menggunakan/menjalankan file.konf yang berisikan firefox 2 dan chrome 3 maka akan terbuka sesuai permintaan konfigurasi file,lalu
-juga ada perintah yang akan menjalankan fungsi menutup aplikasi yaitu ./setup -k.
+kode di atas merupakan fungsi utamanya yang dimana disini berisikan perintak untuk menjalankan fumgsi membuka aplikasi dan menutup aplikasi seperti perintah ketika menggunakan/menjalankan file.konf yang berisikan firefox 2 dan chrome 3 maka akan terbuka sesuai permintaan konfigurasi file,lalu juga ada perintah yang akan menjalankan fungsi menutup aplikasi yaitu ./setup -k.
 
 ### Gambar
 membuka apk
 
-![membuka aplikasi](assets/soal_4_gambar1.png)
+
 
 menutup apk
 
