@@ -1307,10 +1307,11 @@ kode di atas merupakan fungsi utamanya yang dimana disini berisikan perintak unt
 
 ### Gambar
 membuka apk
+![membuka aplikasi -o](assets/soal_4_buka-o.png)
 
-
+![membuka aplikasi -o](assets/soal_4_buka-f.png)
 
 menutup apk
 
-![menutup aplikasi](assets/soal_4_gambar2.png)
+![menutup aplikasi](assets/soal_4_tutup.png)
 
